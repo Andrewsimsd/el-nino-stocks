@@ -82,7 +82,7 @@ The [unit of analysis](https://en.wikipedia.org/wiki/Unit_of_analysis) is a stoc
 
 ### 1. Monthly total returns
 
-Yahoo [adjusted closing prices](https://en.wikipedia.org/wiki/Adjusted_closing_price) are converted to [simple monthly returns](https://en.wikipedia.org/wiki/Rate_of_return):
+Yahoo adjusted closing prices are converted to [simple monthly returns](https://en.wikipedia.org/wiki/Rate_of_return):
 
 ```text
 return(i,t) = adjusted_price(i,t) / adjusted_price(i,t-1) - 1
@@ -102,7 +102,7 @@ This ordering is important. RONI at `t` is used to predict returns occurring aft
 
 ### 3. Broad-market adjustment
 
-For each month, the [median](https://en.wikipedia.org/wiki/Median) return across the available screening universe is used as a [robust](https://en.wikipedia.org/wiki/Robust_statistics) market [proxy](https://en.wikipedia.org/wiki/Proxy_(statistics)). Its future returns are compounded over the same horizon. The regression target is:
+For each month, the [median](https://en.wikipedia.org/wiki/Median) return across the available screening universe is used as a [robust](https://en.wikipedia.org/wiki/Robust_statistics) market [proxy](https://en.wikipedia.org/wiki/Proxy_%28statistics%29). Its future returns are compounded over the same horizon. The regression target is:
 
 ```text
 abnormal_return(i,t,h) = forward_return(i,t,h) - forward_market_return(t,h)
@@ -141,11 +141,11 @@ The lag count is:
 max(floor(4 * (n / 100)^(2/9)), horizon - 1, 1)
 ```
 
-This combines an automatic sample-size [bandwidth](https://en.wikipedia.org/wiki/Bandwidth_(statistics)) with enough [lags](https://en.wikipedia.org/wiki/Lag_operator) to cover dependence mechanically created by overlapping forward-return windows. The resulting slope standard error produces a [t-statistic](https://en.wikipedia.org/wiki/T-statistic) and [two-sided p-value](https://en.wikipedia.org/wiki/P-value).
+This combines an automatic sample-size bandwidth with enough [lags](https://en.wikipedia.org/wiki/Lag_operator) to cover dependence mechanically created by overlapping forward-return windows. The resulting slope standard error produces a [t-statistic](https://en.wikipedia.org/wiki/T-statistic) and [two-sided p-value](https://en.wikipedia.org/wiki/P-value).
 
 ### 6. Purged walk-forward validation
 
-An [in-sample](https://en.wikipedia.org/wiki/In-sample_and_out-of-sample_forecasting) relationship can look impressive even when it has no forecasting value. The program therefore performs [walk-forward validation](https://en.wikipedia.org/wiki/Backtesting) to simulate how the model would have behaved through time:
+An in-sample relationship can look impressive even when it has no forecasting value. The program therefore applies the time-ordered logic of [cross-validation](https://en.wikipedia.org/wiki/Cross-validation_%28statistics%29), using [walk-forward validation](https://en.wikipedia.org/wiki/Backtesting) to simulate how the model would have behaved through time:
 
 1. Fit using only observations whose complete future-return targets would have been known at that date.
 2. Predict the next eligible observation.
@@ -186,7 +186,7 @@ This is a form of [stability analysis](https://en.wikipedia.org/wiki/Sensitivity
 
 ### 8. Correction for thousands of tests
 
-Testing thousands of securities at three horizons creates a [multiple-comparisons problem](https://en.wikipedia.org/wiki/Multiple_comparisons_problem) and will produce small raw p-values by chance. The [Benjamini–Hochberg procedure](https://en.wikipedia.org/wiki/Benjamini%E2%80%93Hochberg_procedure) is applied jointly to every eligible stock–horizon p-value. The resulting [`q_value`](https://en.wikipedia.org/wiki/Q-value_(statistics)) controls the expected [false-discovery proportion](https://en.wikipedia.org/wiki/False_discovery_rate) across the complete [family of tests](https://en.wikipedia.org/wiki/Family-wise_error_rate).
+Testing thousands of securities at three horizons creates a [multiple-comparisons problem](https://en.wikipedia.org/wiki/Multiple_comparisons_problem) and will produce small raw p-values by chance. The [Benjamini–Hochberg procedure](https://en.wikipedia.org/wiki/Benjamini%E2%80%93Hochberg_procedure) is applied jointly to every eligible stock–horizon p-value. The resulting [`q_value`](https://en.wikipedia.org/wiki/Q-value_%28statistics%29) controls the expected [false-discovery proportion](https://en.wikipedia.org/wiki/False_discovery_rate) across the complete [family of tests](https://en.wikipedia.org/wiki/Family-wise_error_rate).
 
 A test is marked statistically significant only when:
 
