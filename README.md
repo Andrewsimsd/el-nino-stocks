@@ -84,29 +84,29 @@ The [unit of analysis](https://en.wikipedia.org/wiki/Unit_of_analysis) is a stoc
 
 Yahoo adjusted closing prices are converted to [simple monthly returns](https://en.wikipedia.org/wiki/Rate_of_return):
 
-```text
-return(i,t) = adjusted_price(i,t) / adjusted_price(i,t-1) - 1
-```
+$$
+r_{i,t} = \frac{P_{i,t}^{\mathrm{adj}}}{P_{i,t-1}^{\mathrm{adj}}} - 1
+$$
 
 Adjusted prices incorporate splits and distributions. Infinite values and months without usable prices are excluded.
 
 ### 2. Forward returns
 
-For a horizon `h`, the program [compounds](https://en.wikipedia.org/wiki/Compound_interest) the next `h` monthly returns using their [geometric product](https://en.wikipedia.org/wiki/Geometric_mean). The target attached to month `t` therefore contains returns from `t+1` through `t+h`:
+For a horizon $h$, the program [compounds](https://en.wikipedia.org/wiki/Compound_interest) the next $h$ monthly returns using their [geometric product](https://en.wikipedia.org/wiki/Geometric_mean). The target attached to month $t$ therefore contains returns from $t+1$ through $t+h$:
 
-```text
-forward_return(i,t,h) = product(1 + return(i,t+j), j=1..h) - 1
-```
+$$
+R_{i,t}^{(h)} = \prod_{j=1}^{h}\left(1 + r_{i,t+j}\right) - 1
+$$
 
-This ordering is important. RONI at `t` is used to predict returns occurring afterward; future RONI is not moved backward and presented to the model as information that was already known.
+This ordering is important. RONI at $t$ is used to predict returns occurring afterward; future RONI is not moved backward and presented to the model as information that was already known.
 
 ### 3. Broad-market adjustment
 
 For each month, the [median](https://en.wikipedia.org/wiki/Median) return across the available screening universe is used as a [robust](https://en.wikipedia.org/wiki/Robust_statistics) market [proxy](https://en.wikipedia.org/wiki/Proxy_%28statistics%29). Its future returns are compounded over the same horizon. The regression target is:
 
-```text
-abnormal_return(i,t,h) = forward_return(i,t,h) - forward_market_return(t,h)
-```
+$$
+AR_{i,t}^{(h)} = R_{i,t}^{(h)} - R_{m,t}^{(h)}
+$$
 
 This asks whether the stock tended to outperform or underperform the broad universe after a given RONI observation. It avoids selecting a stock merely because the entire market rose or fell during historical El Niño periods. The median is used instead of the mean so a handful of extreme or erroneous security returns have less influence on the benchmark.
 
@@ -114,9 +114,9 @@ This asks whether the stock tended to outperform or underperform the broad unive
 
 For every stock and horizon with enough matched data, the program estimates an [ordinary least squares regression](https://en.wikipedia.org/wiki/Ordinary_least_squares):
 
-```text
-abnormal_return(i,t,h) = intercept(i,h) + slope(i,h) * RONI(t) + error(i,t,h)
-```
+$$
+AR_{i,t}^{(h)} = \alpha_{i,h} + \beta_{i,h}\,\mathrm{RONI}_t + \varepsilon_{i,t,h}
+$$
 
 The default requirement is 60 matched months. It can be changed with `--min-observations`, but the program rejects values below 24.
 
@@ -124,10 +124,10 @@ The fitted [`slope`](https://en.wikipedia.org/wiki/Slope) is the estimated chang
 
 The displayed expected abnormal return is the incremental RONI effect relative to a neutral RONI of zero:
 
-```text
-expected_abnormal_return(i,h)
-    = slope(i,h) * max(latest_RONI, 0)
-```
+$$
+\widehat{AR}_{i,h}^{\mathrm{expected}}
+= \beta_{i,h}\max\!\left(\mathrm{RONI}_{\mathrm{latest}}, 0\right)
+$$
 
 The regression [intercept](https://en.wikipedia.org/wiki/Y-intercept) is deliberately excluded from this number because it represents the stock's average abnormal return unrelated to the current positive RONI signal. When the latest RONI is zero or negative, the estimated positive-El-Niño effect is zero.
 
@@ -137,9 +137,9 @@ Forward 3- and 6-month targets overlap. Their [residuals](https://en.wikipedia.o
 
 The lag count is:
 
-```text
-max(floor(4 * (n / 100)^(2/9)), horizon - 1, 1)
-```
+$$
+L = \max\!\left(\left\lfloor 4\left(\frac{n}{100}\right)^{2/9}\right\rfloor,\ h-1,\ 1\right)
+$$
 
 This combines an automatic sample-size bandwidth with enough [lags](https://en.wikipedia.org/wiki/Lag_operator) to cover dependence mechanically created by overlapping forward-return windows. The resulting slope standard error produces a [t-statistic](https://en.wikipedia.org/wiki/T-statistic) and [two-sided p-value](https://en.wikipedia.org/wiki/P-value).
 
@@ -152,29 +152,31 @@ An in-sample relationship can look impressive even when it has no forecasting va
 3. Expand the training window by one observation.
 4. Repeat through the remaining history.
 
-For an `h`-month target, the most recent `h-1` potentially overlapping training labels are excluded. This purge prevents a training target containing future prices from leaking into an earlier prediction.
+For an $h$-month target, the most recent $h-1$ potentially overlapping training labels are excluded. This purge prevents a training target containing future prices from leaking into an earlier prediction.
 
 The principal validation metric is [out-of-sample R²](https://en.wikipedia.org/wiki/Coefficient_of_determination):
 
-```text
-OOS_R2 = 1 - sum((actual - model_prediction)^2)
-             / sum((actual - expanding_historical_mean)^2)
-```
+$$
+R_{\mathrm{OOS}}^2
+= 1 - \frac{\sum_t\left(y_t-\widehat{y}_t\right)^2}
+{\sum_t\left(y_t-\bar{y}_{t-1}\right)^2}
+$$
 
-- `OOS_R2 > 0` means the RONI regression beat a forecast based only on the historical mean.
-- `OOS_R2 = 0` means equal squared-error performance.
-- `OOS_R2 < 0` means the simpler historical-mean forecast performed better.
+- $R_{\mathrm{OOS}}^2 > 0$ means the RONI regression beat a forecast based only on the historical mean.
+- $R_{\mathrm{OOS}}^2 = 0$ means equal squared-error performance.
+- $R_{\mathrm{OOS}}^2 < 0$ means the simpler historical-mean forecast performed better.
 
 The audit table also reports [directional accuracy](https://en.wikipedia.org/wiki/Forecast_skill): the fraction of walk-forward predictions whose [sign](https://en.wikipedia.org/wiki/Sign_function) matched the sign of the realized abnormal return. It is a diagnostic, not a standalone qualification rule.
 
 ### 7. Consistency across El Niño episodes
 
-Months with `RONI >= 0.5` are divided into distinct contiguous warm intervals. The program calculates the stock's mean future abnormal return within each interval and compares its sign with the full-sample regression slope.
+Months with $\mathrm{RONI} \ge 0.5$ are divided into distinct contiguous warm intervals. The program calculates the stock's mean future abnormal return within each interval and compares its sign with the full-sample regression slope.
 
-```text
-event_sign_consistency
-    = matching warm-interval signs / observed warm intervals
-```
+$$
+\mathrm{event\ sign\ consistency}
+= \frac{\text{warm intervals with matching signs}}
+{\text{observed warm intervals}}
+$$
 
 A stock passes temporal validation only when all three conditions hold:
 
@@ -190,9 +192,9 @@ Testing thousands of securities at three horizons creates a [multiple-comparison
 
 A test is marked statistically significant only when:
 
-```text
-q_value < 0.05
-```
+$$
+q < 0.05
+$$
 
 The correction is applied before selecting the displayed stocks, not merely to the final top 25.
 
@@ -200,20 +202,25 @@ The correction is applied before selecting the displayed stocks, not merely to t
 
 The model calculates a selection score for each stock–horizon pair. It combines an [effect size](https://en.wikipedia.org/wiki/Effect_size) relative to [residual volatility](https://en.wikipedia.org/wiki/Standard_deviation), predictive fit, and event stability:
 
-```text
-effect_to_risk = abs(expected_abnormal_return) / residual_volatility
+$$
+\mathrm{effect\text{-}to\text{-}risk}_{i,h}
+= \frac{\left|\widehat{AR}_{i,h}^{\mathrm{expected}}\right|}
+{\sigma_{\varepsilon,i,h}}
+$$
 
-selection_score = effect_to_risk
-                  * sqrt(max(OOS_R2, 0))
-                  * event_sign_consistency
-```
+$$
+\mathrm{selection\ score}_{i,h}
+= \mathrm{effect\text{-}to\text{-}risk}_{i,h}
+\sqrt{\max\!\left(R_{\mathrm{OOS},i,h}^2, 0\right)}
+\times \mathrm{event\ sign\ consistency}_{i,h}
+$$
 
 Consequently, a large fitted return receives little or no ranking credit when it is noisy, fails out of sample, or has an inconsistent sign across warm intervals.
 
 One horizon is retained per stock. The program first prefers horizons that pass temporal validation, then higher selection scores, and finally lower q-values as a tie-breaker. Stocks are displayed in this order:
 
 1. pass temporal validation;
-2. pass the `q < 0.05` significance threshold;
+2. pass the $q < 0.05$ significance threshold;
 3. have a higher selection score; and
 4. have a larger absolute expected abnormal return.
 
