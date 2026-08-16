@@ -3,9 +3,9 @@
 
 Usage:
     pip install -r requirements.txt
-    python src/plot_cane_el_nino.py --data-mode local-only
+    python src/el_nino_screen.py --data-mode local-only
 
-Output: `artifacts/cane_el_nino.html` in the project directory.
+Output: `artifacts/el_nino_screen.html` in the project directory.
 """
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ from predictive_screen import calculate_predictive_screen
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-REPORT_PATH = PROJECT_ROOT / "artifacts" / "cane_el_nino.html"
+REPORT_PATH = PROJECT_ROOT / "artifacts" / "el_nino_screen.html"
 RESULTS_PATH = PROJECT_ROOT / "artifacts" / "el_nino_screen.csv.gz"
 CACHE_DIR = PROJECT_ROOT / "artifacts" / "cache"
 
@@ -303,7 +303,7 @@ def make_plot(
         fig.add_trace(go.Scatter(
             x=series["Date"], y=rebased, mode="lines",
             name=f"{ticker} — {TICKERS.get(ticker, ticker)}",
-            line={"color": color, "width": 2.4 if ticker == "CANE" else 1.5},
+            line={"color": color, "width": 1.5},
             visible=True if ticker in initially_visible else "legendonly",
             hovertemplate=f"{ticker}<br>Date: %{{x|%Y-%m-%d}}<br>Index: %{{y:.1f}}<extra></extra>",
         ), row=1, col=1)

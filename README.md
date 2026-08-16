@@ -19,43 +19,43 @@ pip install -r requirements.txt
 Perform the initial universe and price download:
 
 ```bash
-python src/plot_cane_el_nino.py --data-mode update
+python src/el_nino_screen.py --data-mode update
 ```
 
 Later runs can use one of three data modes:
 
 ```bash
 # Use cached data when available; download only when no cache exists.
-python src/plot_cane_el_nino.py
+python src/el_nino_screen.py
 
 # Prohibit network requests and require an existing cache.
-python src/plot_cane_el_nino.py --data-mode local-only
+python src/el_nino_screen.py --data-mode local-only
 
 # Refresh the universe and RONI, download full history for new symbols,
 # and update recent prices for previously cached symbols.
-python src/plot_cane_el_nino.py --data-mode update
+python src/el_nino_screen.py --data-mode update
 ```
 
 Additional options:
 
 ```bash
 # Delete artifacts/cache/ and rebuild it.
-python src/plot_cane_el_nino.py --clear-cache --data-mode update
+python src/el_nino_screen.py --clear-cache --data-mode update
 
 # Show 50 results, require seven years of monthly observations, and use
 # download batches of 200 symbols.
-python src/plot_cane_el_nino.py \
+python src/el_nino_screen.py \
   --top 50 \
   --min-observations 84 \
   --batch-size 200 \
   --data-mode update
 ```
 
-Run `python src/plot_cane_el_nino.py --help` for the complete CLI reference.
+Run `python src/el_nino_screen.py --help` for the complete CLI reference.
 
 ## Data universe and cache
 
-The script builds its primary universe from the Nasdaq Trader symbol directories for Nasdaq and other US-listed securities. It removes entries identified as ETFs, test issues, preferred shares, warrants, rights, units, or debt. A curated set of international and weather-sensitive securities defined in `plot_cane_el_nino.py` is then added to the universe.
+The script builds its primary universe from the Nasdaq Trader symbol directories for Nasdaq and other US-listed securities. It removes entries identified as ETFs, test issues, preferred shares, warrants, rights, units, or debt. A curated set of international and weather-sensitive securities defined in `el_nino_screen.py` is then added to the universe.
 
 Yahoo Finance does not provide an authoritative list of every global stock, so this is a broad reproducible universe rather than complete worldwide coverage.
 
@@ -71,10 +71,18 @@ Price downloads run in resumable batches and checkpoint every ten batches. `--cl
 
 Every successful run creates:
 
-- `artifacts/cane_el_nino.html`: interactive charts for up to `--top` securities, ranked by predictive selection score
+- `artifacts/el_nino_screen.html`: interactive charts for up to `--top` securities, ranked by predictive selection score
 - `artifacts/el_nino_screen.csv.gz`: every eligible stock–horizon test, including expected abnormal return, out-of-sample results, episode stability, HAC inference, and BH-FDR significance
 
 The HTML report rebases each displayed adjusted-price series to 100 and shades El Niño episodes where RONI is at least 0.5°C for five consecutive overlapping seasons.
+
+### Example report
+
+![Example El Niño securities screen showing rebased prices and predicted abnormal returns](read_me_resources/demo.png)
+
+This snapshot of `el_nino_screen.html` illustrates the two parts of the report. The upper panel compares the selected securities' adjusted prices after rebasing each series to 100; the shaded bands mark historical El Niño episodes. The lower panel shows the model-implied market-adjusted return for each security under the latest positive RONI signal, using the model-selected 1-, 3-, or 6-month horizon.
+
+In this run, Galiano Gold (`GAU`) has the largest positive estimated abnormal return, at approximately 31%, while W&T Offshore (`WTI`) has the largest negative estimate, at approximately -28%. Several other securities have positive estimates in the roughly 4–17% range, while many of the selected negative sensitivities fall between approximately -8% and -26%. These results describe historical predictive relationships after the screen's validation and multiple-testing controls; they do not establish that El Niño caused the returns or that the estimates will be realized. Because the latest RONI observation, market data, and selected securities can change, this image is an example rather than a permanent forecast.
 
 ## What the model calculates
 
@@ -256,12 +264,14 @@ The report should therefore be used as a screening tool, followed by company-spe
 .
 ├── artifacts/
 │   ├── cache/
-│   ├── cane_el_nino.html
+│   ├── el_nino_screen.html
 │   └── el_nino_screen.csv.gz
 ├── src/
-│   ├── plot_cane_el_nino.py
+│   ├── el_nino_screen.py
 │   ├── predictive_screen.py
 │   └── universe_cache.py
+├── read_me_resources/
+│   └── demo.png
 ├── README.md
 └── requirements.txt
 ```
