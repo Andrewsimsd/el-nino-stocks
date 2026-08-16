@@ -1,0 +1,7 @@
+# Generated reports, statistical outputs, and downloaded data caches
+artifacts/
+
+# Local Python environments and bytecode
+.venv/
+__pycache__/
+*.py[cod]
